@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SlimBot</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+:root{
+  --deep:#020818;--panel:#071535;
+  --cyan:#00d4ff;--blue:#0080ff;--purple:#7b2fff;
+  --bright:#e8f4ff;--dim:#7aaac8;--success:#00ff88;--danger:#ff3366;--gold:#ffd700;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--deep);color:var(--bright);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;
+  background-image:radial-gradient(ellipse at 20% 50%,rgba(0,128,255,0.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(123,47,255,0.07) 0%,transparent 50%);}
+.screen{display:none;min-height:100vh;flex-direction:column;}.screen.active{display:flex;}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(5,15,46,0.95);border-bottom:1px solid rgba(0,212,255,0.2);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;flex-shrink:0;}
+.logo{font-family:'Orbitron',monospace;font-weight:900;font-size:1.3rem;letter-spacing:2px;background:linear-gradient(90deg,var(--cyan),var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 8px rgba(0,212,255,0.5));}
+.menu-btn{background:none;border:1px solid rgba(0,212,255,0.3);border-radius:6px;padding:6px 8px;cursor:pointer;display:flex;flex-direction:column;gap:4px;}
+.menu-btn div{width:20px;height:2px;background:var(--cyan);border-radius:2px;}
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;backdrop-filter:blur(4px);}.drawer-overlay.open{display:block;}
+.drawer{position:fixed;top:0;right:-290px;width:270px;height:100%;background:var(--panel);border-left:1px solid rgba(0,212,255,0.2);z-index:201;transition:right 0.3s cubic-bezier(.4,0,.2,1);padding:24px 20px;overflow-y:auto;}.drawer.open{right:0;}
+.drawer-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.drawer-title{font-family:'Orbitron',monospace;font-size:0.85rem;color:var(--cyan);letter-spacing:2px;}
+.drawer-close{background:none;border:none;color:var(--dim);font-size:1.4rem;cursor:pointer;}
+.drawer-user-info{font-size:0.72rem;color:var(--dim);margin-bottom:16px;padding:10px 12px;background:rgba(0,212,255,0.05);border-radius:8px;border:1px solid rgba(0,212,255,0.1);}
+.drawer-user-info span{color:var(--cyan);font-weight:700;}
+.btn-drawer{width:100%;padding:12px;border-radius:8px;cursor:pointer;font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:1.5px;margin-bottom:10px;transition:all 0.2s;border:none;text-align:center;}
+.btn-d-keys{background:linear-gradient(135deg,rgba(0,128,255,0.2),rgba(0,212,255,0.2));border:1px solid rgba(0,212,255,0.4)!important;color:var(--bright);}
+.btn-d-admin{background:linear-gradient(135deg,rgba(123,47,255,0.2),rgba(0,128,255,0.2));border:1px solid rgba(123,47,255,0.4)!important;color:var(--bright);}
+.btn-d-perm{background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,165,0,0.15));border:1px solid rgba(255,215,0,0.4)!important;color:var(--gold);}
+.btn-d-logout{width:100%;padding:10px;background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.3)!important;border-radius:8px;color:var(--danger);font-family:'Orbitron',monospace;font-size:0.65rem;cursor:pointer;letter-spacing:1px;margin-top:8px;}
+.main-content{flex:1;max-width:480px;margin:0 auto;width:100%;padding:30px 20px 60px;}
+.section-title{font-family:'Orbitron',monospace;font-size:0.62rem;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:14px;}
+.auth-box{background:var(--panel);border:1px solid rgba(0,212,255,0.15);border-radius:16px;padding:30px 24px;margin-top:20px;}
+.auth-title{font-family:'Orbitron',monospace;font-size:1rem;color:var(--cyan);letter-spacing:3px;text-align:center;margin-bottom:6px;}
+.auth-sub{font-size:0.75rem;color:var(--dim);text-align:center;margin-bottom:22px;}
+.auth-tabs{display:flex;margin-bottom:22px;border:1px solid rgba(0,212,255,0.2);border-radius:10px;overflow:hidden;}
+.auth-tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-family:'Orbitron',monospace;font-size:0.62rem;letter-spacing:1.5px;color:var(--dim);background:transparent;border:none;transition:all 0.2s;}
+.auth-tab.active{background:rgba(0,212,255,0.12);color:var(--cyan);}
+.field-label{font-size:0.68rem;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.finput{width:100%;padding:12px 14px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,212,255,0.2);border-radius:8px;color:var(--bright);font-family:'Rajdhani',sans-serif;font-size:0.95rem;margin-bottom:12px;outline:none;transition:border-color 0.2s;}
+.finput:focus{border-color:var(--cyan);}.finput::placeholder{color:var(--dim);}
+.btn-auth{width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:#000;font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;letter-spacing:2px;cursor:pointer;box-shadow:0 4px 15px rgba(0,128,255,0.3);transition:all 0.2s;margin-top:4px;}
+.btn-auth:hover{transform:translateY(-2px);}
+.auth-msg{font-size:0.75rem;text-align:center;margin-top:10px;min-height:18px;}
+.auth-msg.error{color:var(--danger);}.auth-msg.ok{color:var(--success);}
+.plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.plan-card{background:var(--panel);border:1px solid rgba(0,212,255,0.15);border-radius:14px;padding:18px 14px;cursor:pointer;transition:all 0.25s;text-align:center;position:relative;overflow:hidden;}
+.plan-card::before{content:'';position:absolute;inset:0;border-radius:14px;opacity:0;transition:opacity 0.25s;}
+.plan-card.c1::before{background:radial-gradient(ellipse at 50% 0%,rgba(0,212,255,0.12) 0%,transparent 70%);}
+.plan-card.c2::before{background:radial-gradient(ellipse at 50% 0%,rgba(123,47,255,0.15) 0%,transparent 70%);}
+.plan-card.c3::before{background:radial-gradient(ellipse at 50% 0%,rgba(255,215,0,0.1) 0%,transparent 70%);}
+.plan-card.c4::before{background:radial-gradient(ellipse at 50% 0%,rgba(0,255,136,0.1) 0%,transparent 70%);}
+.plan-card:hover{transform:translateY(-3px);}
+.plan-card:hover::before{opacity:1;}
+.plan-card.c1:hover{border-color:var(--cyan);box-shadow:0 0 20px rgba(0,212,255,0.2);}
+.plan-card.c2:hover{border-color:var(--purple);box-shadow:0 0 20px rgba(123,47,255,0.2);}
+.plan-card.c3:hover{border-color:var(--gold);box-shadow:0 0 20px rgba(255,215,0,0.2);}
+.plan-card.c4:hover{border-color:var(--success);box-shadow:0 0 20px rgba(0,255,136,0.2);}
+.plan-card.c3,.plan-card.c4{grid-column:1/-1;}
+.plan-card.bloqueado{opacity:0.55;cursor:not-allowed;pointer-events:none;}
+.plan-icon{font-size:1.8rem;margin-bottom:7px;}
+.plan-name{font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;margin-bottom:4px;}
+.plan-card.c1 .plan-name{color:var(--cyan);}
+.plan-card.c2 .plan-name{color:var(--purple);}
+.plan-card.c3 .plan-name{color:var(--gold);}
+.plan-card.c4 .plan-name{color:var(--success);}
+.plan-detail{font-size:0.68rem;color:var(--dim);line-height:1.5;}
+.plan-bloqueo-badge{font-size:0.6rem;color:var(--danger);margin-top:5px;font-family:'Orbitron',monospace;letter-spacing:1px;}
+.acort-single{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;text-align:center;}
+.acort-num-big{font-family:'Orbitron',monospace;font-size:0.68rem;letter-spacing:4px;color:var(--dim);margin-bottom:12px;}
+.acort-circle{width:200px;height:200px;position:relative;margin:0 auto 28px;display:flex;align-items:center;justify-content:center;}
+.acort-circle svg{position:absolute;top:0;left:0;width:100%;height:100%;transform:rotate(-90deg);}
+.acort-circle-bg{fill:none;stroke:rgba(0,212,255,0.1);stroke-width:8;}
+.acort-circle-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
+.acort-time-center{font-family:'Orbitron',monospace;font-size:2.8rem;font-weight:900;color:var(--bright);z-index:1;}
+.acort-label-center{font-family:'Orbitron',monospace;font-size:0.6rem;color:var(--dim);letter-spacing:3px;margin-top:4px;}
+.acort-plan-tag{font-family:'Orbitron',monospace;font-size:0.68rem;padding:5px 14px;border-radius:20px;display:inline-block;margin-bottom:20px;}
+.tag-c1{background:rgba(0,212,255,0.1);color:var(--cyan);border:1px solid rgba(0,212,255,0.3);}
+.tag-c2{background:rgba(123,47,255,0.1);color:var(--purple);border:1px solid rgba(123,47,255,0.3);}
+.tag-c3{background:rgba(255,215,0,0.1);color:var(--gold);border:1px solid rgba(255,215,0,0.3);}
+.btn-iniciar{padding:14px 44px;border:none;border-radius:50px;color:#000;font-family:'Orbitron',monospace;font-size:0.8rem;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;}
+.bloqueo-content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;}
+.bloqueo-icon{font-size:3.5rem;margin-bottom:16px;}
+.bloqueo-title{font-family:'Orbitron',monospace;font-size:0.72rem;letter-spacing:4px;color:var(--danger);margin-bottom:10px;}
+.bloqueo-msg{font-size:0.85rem;color:var(--dim);line-height:1.6;margin-bottom:28px;max-width:320px;}
+.bloqueo-box{background:rgba(255,51,102,0.06);border:1px solid rgba(255,51,102,0.2);border-radius:14px;padding:24px 30px;margin-bottom:24px;min-width:260px;}
+.bloqueo-box-label{font-size:0.62rem;color:var(--dim);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;font-family:'Orbitron',monospace;}
+.bloqueo-timer{font-family:'Orbitron',monospace;font-size:2.4rem;font-weight:900;color:var(--danger);letter-spacing:4px;}
+.bloqueo-plan-badge{font-family:'Orbitron',monospace;font-size:0.65rem;padding:4px 12px;border-radius:12px;display:inline-block;margin-bottom:20px;}
+.key-result-content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;}
+.key-result-icon{font-size:3rem;margin-bottom:14px;}
+.key-result-title{font-family:'Orbitron',monospace;font-size:0.68rem;letter-spacing:4px;color:var(--success);margin-bottom:18px;}
+.key-display{font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;color:var(--bright);background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:10px;padding:18px 20px;word-break:break-all;letter-spacing:1px;margin-bottom:22px;width:100%;}
+.key-actions{display:flex;flex-direction:column;gap:10px;width:100%;}
+.btn-copiar{padding:13px 20px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);border-radius:10px;color:var(--success);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;transition:all 0.2s;letter-spacing:1px;}
+.btn-copiar.copied{background:rgba(0,255,136,0.25);}
+.btn-whatsapp{padding:13px 20px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.35);border-radius:10px;color:#25D366;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-nueva-key{padding:13px;background:rgba(0,128,255,0.1);border:1px solid rgba(0,128,255,0.3);border-radius:10px;color:var(--blue);font-family:'Orbitron',monospace;font-size:0.62rem;cursor:pointer;letter-spacing:2px;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}.modal-overlay.open{display:flex;}
+.modal{background:var(--panel);border:1px solid rgba(123,47,255,0.35);border-radius:16px;width:100%;max-width:460px;padding:26px 22px;box-shadow:0 0 40px rgba(123,47,255,0.2);position:relative;margin:auto;}
+.modal-title{font-family:'Orbitron',monospace;font-size:0.85rem;color:var(--purple);letter-spacing:3px;margin-bottom:5px;text-align:center;}
+.modal-sub{font-size:0.73rem;color:var(--dim);text-align:center;margin-bottom:18px;}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--dim);font-size:1.3rem;cursor:pointer;}
+.admin-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;}
+.admin-stat-card{background:rgba(0,0,0,0.25);border:1px solid rgba(0,212,255,0.1);border-radius:10px;padding:12px 8px;text-align:center;}
+.admin-stat-num{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;color:var(--cyan);}
+.admin-stat-lbl{font-size:0.58rem;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.admin-tabs-row{display:flex;margin-bottom:16px;border:1px solid rgba(0,212,255,0.15);border-radius:8px;overflow:hidden;}
+.admin-tab{flex:1;padding:9px;text-align:center;cursor:pointer;font-family:'Orbitron',monospace;font-size:0.58rem;letter-spacing:1px;color:var(--dim);background:transparent;border:none;transition:all 0.2s;}
+.admin-tab.active{background:rgba(0,212,255,0.1);color:var(--cyan);}
+.scroll-list{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.scroll-list::-webkit-scrollbar{width:3px;}.scroll-list::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.2);border-radius:2px;}
+.key-entry{background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:10px 12px;}
+.key-entry-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px;}
+.key-entry-text{font-family:'Orbitron',monospace;font-size:0.56rem;color:var(--bright);flex:1;word-break:break-all;line-height:1.4;}
+.key-badge{font-size:0.56rem;padding:3px 7px;border-radius:10px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+.b-24h{background:rgba(0,212,255,0.12);color:var(--cyan);border:1px solid rgba(0,212,255,0.3);}
+.b-3d{background:rgba(123,47,255,0.12);color:var(--purple);border:1px solid rgba(123,47,255,0.3);}
+.b-7d{background:rgba(255,215,0,0.1);color:var(--gold);border:1px solid rgba(255,215,0,0.3);}
+.key-entry-meta{font-size:0.58rem;color:var(--dim);}
+.user-entry{background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.user-entry-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.user-entry-name{font-family:'Orbitron',monospace;font-size:0.72rem;color:var(--bright);}
+.user-entry-role{font-size:0.58rem;padding:3px 8px;border-radius:10px;}
+.role-admin{background:rgba(255,215,0,0.12);color:var(--gold);border:1px solid rgba(255,215,0,0.3);}
+.role-vendedor{background:rgba(0,212,255,0.1);color:var(--cyan);border:1px solid rgba(0,212,255,0.25);}
+.role-user{background:rgba(0,255,136,0.08);color:var(--success);border:1px solid rgba(0,255,136,0.2);}
+.user-entry-meta{font-size:0.62rem;color:var(--dim);margin-bottom:8px;line-height:1.6;}
+.user-entry-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.btn-ue{padding:5px 10px;border-radius:6px;font-size:0.6rem;cursor:pointer;border:1px solid;font-family:'Rajdhani',sans-serif;font-weight:700;transition:all 0.2s;}
+.btn-ue-block{background:rgba(255,165,0,0.1);border-color:rgba(255,165,0,0.4);color:orange;}
+.btn-ue-unblock{background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.4);color:var(--success);}
+.btn-ue-del{background:rgba(255,51,102,0.1);border-color:rgba(255,51,102,0.4);color:var(--danger);}
+.btn-ue-edit{background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.3);color:var(--cyan);}
+.blocked-badge{font-size:0.6rem;padding:2px 7px;background:rgba(255,51,102,0.15);border:1px solid rgba(255,51,102,0.3);color:var(--danger);border-radius:8px;margin-left:6px;}
+.admin-api-box{background:rgba(0,0,0,0.2);border:1px solid rgba(0,212,255,0.1);border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.admin-api-text{font-family:'Orbitron',monospace;font-size:0.54rem;color:var(--cyan);word-break:break-all;flex:1;}
+.btn-copy-sm{padding:6px 10px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:6px;color:var(--cyan);font-size:0.68rem;cursor:pointer;}
+.user-key-entry{background:rgba(0,0,0,0.2);border:1px solid rgba(0,212,255,0.08);border-radius:8px;padding:12px 14px;margin-bottom:8px;}
+.user-key-text{font-family:'Orbitron',monospace;font-size:0.6rem;color:var(--bright);margin-bottom:5px;word-break:break-all;}
+.user-key-meta{font-size:0.62rem;color:var(--dim);display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.empty-msg{text-align:center;padding:28px;color:var(--dim);font-size:0.78rem;}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.3);color:var(--success);padding:10px 20px;border-radius:30px;font-size:0.8rem;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1px;z-index:999;transition:transform 0.3s ease;pointer-events:none;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}.toast.err{background:rgba(255,51,102,0.15);border-color:rgba(255,51,102,0.3);color:var(--danger);}
+footer{text-align:center;padding:20px;font-size:0.62rem;color:rgba(122,170,200,0.25);letter-spacing:2px;font-family:'Orbitron',monospace;}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<linearGradient id="gC" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0080ff"/><stop offset="100%" stop-color="#00d4ff"/></linearGradient>
+<linearGradient id="gP" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7b2fff"/><stop offset="100%" stop-color="#b06aff"/></linearGradient>
+<linearGradient id="gG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f0a500"/><stop offset="100%" stop-color="#ffd700"/></linearGradient>
+</defs></svg>
+
+<!-- AUTH -->
+<div id="sAuth" class="screen active">
+  <header><div class="logo">SLIM BOT</div></header>
+  <div class="main-content">
+    <div class="auth-box">
+      <div class="auth-title">BIENVENIDO</div>
+      <div class="auth-sub">Accede o crea tu cuenta para continuar</div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabL" onclick="switchTab('login')">INICIAR SESIÓN</button>
+        <button class="auth-tab" id="tabR" onclick="switchTab('reg')">CREAR CUENTA</button>
+      </div>
+      <div id="fLogin">
+        <div class="field-label">Usuario</div><input class="finput" id="lUser" type="text" placeholder="tu usuario" autocomplete="off">
+        <div class="field-label">Contraseña</div><input class="finput" id="lPass" type="password" placeholder="••••••••">
+        <button class="btn-auth" onclick="doLogin()">ENTRAR</button>
+        <div class="auth-msg" id="lMsg"></div>
+      </div>
+      <div id="fReg" style="display:none">
+        <div class="field-label">Usuario</div><input class="finput" id="rUser" type="text" placeholder="elige un usuario" autocomplete="off">
+        <div class="field-label">Contraseña</div><input class="finput" id="rPass" type="password" placeholder="••••••••">
+        <div class="field-label">Confirmar contraseña</div><input class="finput" id="rPass2" type="password" placeholder="••••••••">
+        <button class="btn-auth" onclick="doRegister()">CREAR CUENTA</button>
+        <div class="auth-msg" id="rMsg"></div>
+      </div>
+    </div>
+  </div>
+  <footer>SLIMBOT v2.0 · 2026</footer>
+</div>
+
+<!-- HOME -->
+<div id="sHome" class="screen">
+  <header><div class="logo">SLIM BOT</div><button class="menu-btn" onclick="abrirDrawer()"><div></div><div></div><div></div></button></header>
+  <div class="main-content">
+    <div class="section-title" style="margin-bottom:18px;">Selecciona tu plan</div>
+    <div class="plans-grid">
+      <div class="plan-card c1" id="card24h" onclick="intentarPlan('24h')">
+        <div class="plan-icon">⚡</div><div class="plan-name">24 HORAS</div>
+        <div class="plan-detail">10 acortadores · 25 seg c/u</div>
+        <div class="plan-bloqueo-badge" id="badge24h" style="display:none"></div>
+      </div>
+      <div class="plan-card c2" id="card3d" onclick="intentarPlan('3d')">
+        <div class="plan-icon">🔐</div><div class="plan-name">3 DÍAS</div>
+        <div class="plan-detail">30 acortadores · 35 seg c/u</div>
+        <div class="plan-bloqueo-badge" id="badge3d" style="display:none"></div>
+      </div>
+      <div class="plan-card c3" id="card7d" onclick="intentarPlan('7d')">
+        <div class="plan-icon">👑</div><div class="plan-name">1 SEMANA</div>
+        <div class="plan-detail">80 acortadores · 20 seg c/u</div>
+        <div class="plan-bloqueo-badge" id="badge7d" style="display:none"></div>
+      </div>
+      <div class="plan-card c4" onclick="comprarPermanente()">
+        <div class="plan-icon">♾️</div><div class="plan-name">PERMANENTE</div>
+        <div class="plan-detail">Contáctanos para adquirirla</div>
+      </div>
+    </div>
+  </div>
+  <footer>SLIMBOT v2.0 · 2026</footer>
+</div>
+
+<!-- BLOQUEO -->
+<div id="sBloqueo" class="screen">
+  <header><div class="logo">SLIM BOT</div><button class="menu-btn" onclick="abrirDrawer()"><div></div><div></div><div></div></button></header>
+  <div class="bloqueo-content">
+    <div class="bloqueo-icon">🔒</div>
+    <div class="bloqueo-title">ACCESO BLOQUEADO</div>
+    <div class="bloqueo-msg" id="bloqueoMsg">Ya generaste una licencia de este plan. Debes esperar antes de generar una nueva.</div>
+    <div class="bloqueo-plan-badge" id="bloqueoPlanBadge"></div>
+    <div class="bloqueo-box"><div class="bloqueo-box-label">Tiempo restante</div><div class="bloqueo-timer" id="bloqueoTimer">00:00:00</div></div>
+    <button onclick="irHome()" style="padding:12px 28px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--dim);font-family:'Orbitron',monospace;font-size:0.62rem;cursor:pointer;letter-spacing:2px;">← VOLVER</button>
+  </div>
+  <footer>SLIMBOT v2.0 · 2026</footer>
+</div>
+
+<!-- ACORTADOR -->
+<div id="sAcort" class="screen">
+  <header><div class="logo">SLIM BOT</div>
+    <button onclick="cancelarAcort()" style="background:none;border:1px solid rgba(255,51,102,0.3);border-radius:6px;padding:6px 12px;color:var(--danger);font-size:0.68rem;cursor:pointer;font-family:'Orbitron',monospace;letter-spacing:1px;">✕ SALIR</button>
+  </header>
+  <div class="acort-single">
+    <div class="acort-plan-tag" id="acortTag"></div>
+    <div class="acort-num-big" id="acortNum">ACORTADOR 01 / 10</div>
+    <div class="acort-circle">
+      <svg viewBox="0 0 200 200"><circle class="acort-circle-bg" cx="100" cy="100" r="88"/><circle class="acort-circle-fill" id="circleStroke" cx="100" cy="100" r="88" stroke-dasharray="553" stroke-dashoffset="553"/></svg>
+      <div style="text-align:center;z-index:1;"><div class="acort-time-center" id="acortTime">25</div><div class="acort-label-center">SEG</div></div>
+    </div>
+    <button class="btn-iniciar" id="btnIniciar" onclick="iniciarTimer()">▶ INICIAR</button>
+  </div>
+</div>
+
+<!-- KEY RESULT -->
+<div id="sKey" class="screen">
+  <header><div class="logo">SLIM BOT</div></header>
+  <div class="key-result-content">
+    <div class="key-result-icon">🔑</div>
+    <div class="key-result-title">✦ LICENCIA GENERADA ✦</div>
+    <div class="key-display" id="keyDisplay">—</div>
+    <div class="key-actions">
+      <button class="btn-copiar" id="btnCopiar" onclick="copiarKey()">📋 Copiar Licencia</button>
+      <a class="btn-whatsapp" id="btnWA" href="#" target="_blank">📲 Enviar a WhatsApp</a>
+      <button class="btn-nueva-key" onclick="irHome()">↩ VOLVER AL INICIO</button>
+    </div>
+  </div>
+  <footer>SLIMBOT v2.0 · 2026</footer>
+</div>
+
+<!-- DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="cerrarDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header"><div class="drawer-title">MENÚ</div><button class="drawer-close" onclick="cerrarDrawer()">✕</button></div>
+  <div class="drawer-user-info">Conectado: <span id="drawerUser">—</span></div>
+  <button class="btn-drawer btn-d-keys" onclick="cerrarDrawer();abrirMisKeys()">🔑 MIS LICENCIAS</button>
+  <button class="btn-drawer btn-d-perm" onclick="cerrarDrawer();comprarPermanente()">♾️ KEY PERMANENTE</button>
+  <button class="btn-drawer btn-d-admin" id="btnDAdmin" style="display:none" onclick="cerrarDrawer();abrirAdmin()">⚙ ADMIN</button>
+  <button class="btn-drawer btn-d-admin" id="btnDVend" style="display:none" onclick="cerrarDrawer();abrirAdmin()">🛒 VENDEDOR</button>
+  <button class="btn-d-logout" onclick="cerrarDrawer();logout()">CERRAR SESIÓN</button>
+</div>
+
+<!-- MODAL ADMIN LOGIN -->
+<div class="modal-overlay" id="mAdminLogin">
+  <div class="modal">
+    <button class="modal-close" onclick="closeM('mAdminLogin')">✕</button>
+    <div class="modal-title">ACCESO PANEL</div><div class="modal-sub">Credenciales requeridas</div>
+    <div class="field-label">Usuario</div><input class="finput" id="aUser" type="text" placeholder="usuario" autocomplete="off">
+    <div class="field-label">Contraseña</div><input class="finput" id="aPass" type="password" placeholder="••••••••">
+    <button class="btn-auth" style="background:linear-gradient(135deg,#7b2fff,#b06aff);" onclick="loginAdmin()">ENTRAR</button>
+    <div class="auth-msg error" id="aMsg"></div>
+  </div>
+</div>
+
+<!-- MODAL PANEL ADMIN -->
+<div class="modal-overlay" id="mAdminPanel">
+  <div class="modal">
+    <button class="modal-close" onclick="closeM('mAdminPanel')">✕</button>
+    <div class="modal-title" id="panelTitle">PANEL ADMIN</div><div class="modal-sub" id="panelSub">Control total</div>
+    <div class="admin-stats-grid">
+      <div class="admin-stat-card"><div class="admin-stat-num" id="stTotal">0</div><div class="admin-stat-lbl">Total</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num" id="stActivas">0</div><div class="admin-stat-lbl">Activas</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num" id="stUsers">0</div><div class="admin-stat-lbl">Usuarios</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num" id="st24h">0</div><div class="admin-stat-lbl">24H</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num" id="st3d">0</div><div class="admin-stat-lbl">3D</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num" id="st7d">0</div><div class="admin-stat-lbl">7D</div></div>
+    </div>
+    <div class="admin-tabs-row" id="adminTabsRow">
+      <button class="admin-tab active" onclick="panelTab('lic',this)">LICENCIAS</button>
+      <button class="admin-tab" onclick="panelTab('usr',this)" id="tabUsrBtn">USUARIOS</button>
+      <button class="admin-tab" onclick="panelTab('api',this)" id="tabApiBtn">API</button>
+    </div>
+    <div id="tLic"><div class="scroll-list" id="licList"></div></div>
+    <div id="tUsr" style="display:none"><div id="usrList"></div></div>
+    <div id="tApi" style="display:none">
+      <div class="section-title" style="margin-bottom:10px;">API KEY</div>
+      <div class="admin-api-box"><div class="admin-api-text" id="apiKeyText">—</div><button class="btn-copy-sm" onclick="copiarApi()">📋</button></div>
+      <div style="font-size:0.68rem;color:var(--dim);line-height:1.8;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px;border:1px solid rgba(0,212,255,0.08);">
+        <div style="color:var(--cyan);font-family:'Orbitron',monospace;font-size:0.6rem;letter-spacing:2px;margin-bottom:10px;">IDENTIFICADOR BOT WHATSAPP</div>
+        <b style="color:var(--bright);">24H</b> → plan 24 horas (bloqueo 42h)<br>
+        <b style="color:var(--bright);">3D</b> → plan 3 días (bloqueo 53h)<br>
+        <b style="color:var(--bright);">7D</b> → plan 1 semana<br><br>
+        <code style="color:var(--cyan);font-size:0.62rem;line-height:2;">
+          if (key.includes('24H')) → 24 horas<br>
+          if (key.includes('3D')) → 3 días<br>
+          if (key.includes('7D')) → 7 días
+        </code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MIS LICENCIAS -->
+<div class="modal-overlay" id="mMisKeys">
+  <div class="modal" style="border-color:rgba(0,212,255,0.3);">
+    <button class="modal-close" onclick="closeM('mMisKeys')">✕</button>
+    <div class="modal-title" style="color:var(--cyan);">MIS LICENCIAS</div>
+    <div class="modal-sub" id="misKeysSub">—</div>
+    <div id="misKeysList" style="margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR USUARIO -->
+<div class="modal-overlay" id="mEditUser">
+  <div class="modal" style="border-color:rgba(0,212,255,0.3);">
+    <button class="modal-close" onclick="closeM('mEditUser')">✕</button>
+    <div class="modal-title" style="color:var(--cyan);">EDITAR USUARIO</div>
+    <div class="modal-sub" id="editSub">—</div>
+    <input type="hidden" id="editOld">
+    <div class="field-label">Nuevo nombre</div><input class="finput" id="editName" type="text" autocomplete="off">
+    <div class="field-label">Contraseña (vacío = no cambiar)</div><input class="finput" id="editPass" type="text">
+    <div class="field-label">Rol</div>
+    <select class="finput" id="editRole" style="cursor:pointer;">
+      <option value="user">Usuario</option><option value="vendedor">Vendedor</option><option value="admin">Admin</option>
+    </select>
+    <button class="btn-auth" style="background:linear-gradient(135deg,#0080ff,#00d4ff);margin-top:4px;" onclick="guardarEdit()">GUARDAR</button>
+    <div class="auth-msg" id="editMsg"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WA = '526121697959';
+const API_KEY = 'SlimBot-API-2026-SX9K2MTP';
+const BOT_NAME = 'SlimBot';
+const PERM_MSG = 'Quiero comprar mi key de SlimBot permanente';
+
+const CFG = {
+  '24h':{ total:10, segs:25, label:'24 HORAS', tag:'tag-c1', grad:'url(#gC)', badge:'b-24h', id:'24H', btnBg:'linear-gradient(135deg,#0080ff,#00d4ff)', btnSh:'rgba(0,128,255,0.4)', bloqMs:42*3600*1000 },
+  '3d': { total:30, segs:35, label:'3 DÍAS',   tag:'tag-c2', grad:'url(#gP)', badge:'b-3d',  id:'3D',  btnBg:'linear-gradient(135deg,#7b2fff,#b06aff)', btnSh:'rgba(123,47,255,0.4)', bloqMs:53*3600*1000 },
+  '7d': { total:80, segs:20, label:'1 SEMANA', tag:'tag-c3', grad:'url(#gG)', badge:'b-7d',  id:'7D',  btnBg:'linear-gradient(135deg,#f0a500,#ffd700)', btnSh:'rgba(255,215,0,0.4)',  bloqMs:0 }
+};
+
+const S={
+  getU(){ return JSON.parse(localStorage.getItem('sb_u')||'{}'); },
+  setU(v){ localStorage.setItem('sb_u',JSON.stringify(v)); },
+  getK(){ return JSON.parse(localStorage.getItem('sb_k')||'[]'); },
+  setK(v){ localStorage.setItem('sb_k',JSON.stringify(v)); },
+  getIPs(){ return JSON.parse(localStorage.getItem('sb_ip')||'[]'); },
+  setIPs(v){ localStorage.setItem('sb_ip',JSON.stringify(v)); },
+  getSes(){ return localStorage.getItem('sb_ses')||null; },
+  setSes(v){ localStorage.setItem('sb_ses',v); },
+  clrSes(){ localStorage.removeItem('sb_ses'); }
+};
+
+// Asegurar cuenta admin
+(function(){
+  const u=S.getU();
+  if(!u['slim']){ u['slim']={pass:'xit1233',role:'admin',creado:new Date().toLocaleDateString('es-MX'),bloqueado:false,ip:''}; S.setU(u); }
+})();
+
+let plan=null,acortIdx=0,timerInt=null,bloqueoInt=null,badgeInt=null;
+let curUser=null,curRol=null,panelRol=null;
+
+function irA(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+function irHome(){ actualizarBloqueos(); irA('sHome'); }
+function closeM(id){ document.getElementById(id).classList.remove('open'); }
+
+function switchTab(t){
+  document.getElementById('fLogin').style.display=t==='login'?'block':'none';
+  document.getElementById('fReg').style.display=t==='reg'?'block':'none';
+  document.getElementById('tabL').classList.toggle('active',t==='login');
+  document.getElementById('tabR').classList.toggle('active',t==='reg');
+  document.getElementById('lMsg').textContent='';
+  document.getElementById('rMsg').textContent='';
+}
+
+function norm(s){ return s.toLowerCase().trim(); }
+
+function setSession(u){
+  const us=S.getU(); curUser=u; curRol=us[u]?.role||'user'; S.setSes(u);
+  document.getElementById('drawerUser').textContent=u;
+  document.getElementById('btnDAdmin').style.display=curRol==='admin'?'block':'none';
+  document.getElementById('btnDVend').style.display=curRol==='vendedor'?'block':'none';
+}
+
+function doLogin(){
+  const u=norm(document.getElementById('lUser').value);
+  const p=document.getElementById('lPass').value.trim();
+  const msg=document.getElementById('lMsg');
+  if(!u||!p){ msg.className='auth-msg error'; msg.textContent='Completa todos los campos'; return; }
+  const us=S.getU();
+  if(!us[u]){ msg.className='auth-msg error'; msg.textContent='Usuario no encontrado'; return; }
+  if(us[u].pass!==p){ msg.className='auth-msg error'; msg.textContent='Contraseña incorrecta'; return; }
+  if(us[u].bloqueado){ msg.className='auth-msg error'; msg.textContent='❌ Cuenta bloqueada'; return; }
+  setSession(u); msg.className='auth-msg ok'; msg.textContent='¡Bienvenido!';
+  setTimeout(()=>{ actualizarBloqueos(); iniciarBadgeInt(); irA('sHome'); },600);
+}
+
+function doRegister(){
+  const u=norm(document.getElementById('rUser').value);
+  const p=document.getElementById('rPass').value.trim();
+  const p2=document.getElementById('rPass2').value.trim();
+  const msg=document.getElementById('rMsg');
+  if(!u||!p||!p2){ msg.className='auth-msg error'; msg.textContent='Completa todos los campos'; return; }
+  if(u.length<3){ msg.className='auth-msg error'; msg.textContent='Usuario muy corto (mín. 3)'; return; }
+  if(p.length<4){ msg.className='auth-msg error'; msg.textContent='Contraseña muy corta (mín. 4)'; return; }
+  if(p!==p2){ msg.className='auth-msg error'; msg.textContent='Las contraseñas no coinciden'; return; }
+  const us=S.getU();
+  if(us[u]){ msg.className='auth-msg error'; msg.textContent='Ese usuario ya existe'; return; }
+  us[u]={pass:p,role:'user',creado:new Date().toLocaleDateString('es-MX'),bloqueado:false,ip:''};
+  S.setU(us); setSession(u); msg.className='auth-msg ok'; msg.textContent='¡Cuenta creada!';
+  setTimeout(()=>{ actualizarBloqueos(); iniciarBadgeInt(); irA('sHome'); },600);
+}
+
+function logout(){ S.clrSes(); curUser=null; curRol=null; clearInterval(badgeInt);
+  document.getElementById('lUser').value=''; document.getElementById('lPass').value=''; document.getElementById('lMsg').textContent=''; irA('sAuth'); }
+
+// BLOQUEO
+function getMsRestantes(tipo){
+  const cfg=CFG[tipo]; if(!cfg.bloqMs) return 0;
+  const keys=S.getK(); const ultima=keys.find(k=>k.usuario===curUser&&k.tipo===tipo);
+  if(!ultima) return 0; const r=cfg.bloqMs-(Date.now()-ultima.ts); return r>0?r:0;
+}
+
+function actualizarBloqueos(){
+  [['24h','card24h','badge24h'],['3d','card3d','badge3d'],['7d','card7d','badge7d']].forEach(([tipo,cardId,badgeId])=>{
+    const ms=getMsRestantes(tipo);
+    const card=document.getElementById(cardId), badge=document.getElementById(badgeId);
+    if(!card) return;
+    if(ms>0){ card.classList.add('bloqueado'); card.style.pointerEvents='none'; badge.style.display='block'; badge.textContent='🔒 '+fmtMs(ms); }
+    else { card.classList.remove('bloqueado'); card.style.pointerEvents=''; badge.style.display='none'; badge.textContent=''; }
+  });
+}
+
+function iniciarBadgeInt(){ clearInterval(badgeInt); badgeInt=setInterval(actualizarBloqueos,1000); }
+
+function intentarPlan(tipo){
+  const ms=getMsRestantes(tipo); if(ms>0){ mostrarBloqueo(tipo,ms); return; } seleccionarPlan(tipo);
+}
+
+function mostrarBloqueo(tipo,ms){
+  clearInterval(bloqueoInt);
+  const cfg=CFG[tipo];
+  document.getElementById('bloqueoMsg').textContent=`Ya generaste una licencia ${cfg.label}. Espera el tiempo indicado.`;
+  const b=document.getElementById('bloqueoPlanBadge');
+  b.textContent=cfg.label; b.className='bloqueo-plan-badge '+cfg.badge;
+  b.style.cssText+='display:inline-block;padding:5px 16px;border-radius:14px;font-family:Orbitron,monospace;font-size:0.68rem;';
+  let t=ms; document.getElementById('bloqueoTimer').textContent=fmtMs(t); irA('sBloqueo');
+  bloqueoInt=setInterval(()=>{ t-=1000; if(t<=0){ clearInterval(bloqueoInt); document.getElementById('bloqueoTimer').textContent='00:00:00'; mostrarToast('✓ ¡Ya puedes generar nueva licencia!'); setTimeout(()=>irHome(),1200); } else document.getElementById('bloqueoTimer').textContent=fmtMs(t); },1000);
+}
+
+function fmtMs(ms){ const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+
+// ACORTADORES
+function seleccionarPlan(tipo){ plan=tipo; acortIdx=0; cfgAcort(); irA('sAcort'); }
+
+function cfgAcort(){
+  const c=CFG[plan],n=acortIdx+1;
+  document.getElementById('acortTag').textContent=c.label; document.getElementById('acortTag').className='acort-plan-tag '+c.tag;
+  document.getElementById('acortNum').textContent=`ACORTADOR ${String(n).padStart(2,'0')} / ${String(c.total).padStart(2,'0')}`;
+  document.getElementById('acortTime').textContent=c.segs;
+  const ci=document.getElementById('circleStroke'),C=2*Math.PI*88;
+  ci.style.strokeDasharray=C; ci.style.strokeDashoffset=C; ci.setAttribute('stroke',c.grad);
+  const b=document.getElementById('btnIniciar');
+  b.textContent='▶ INICIAR'; b.disabled=false; b.style.opacity='1'; b.style.background=c.btnBg; b.style.boxShadow=`0 4px 20px ${c.btnSh}`;
+}
+
+function iniciarTimer(){
+  const c=CFG[plan],b=document.getElementById('btnIniciar');
+  b.disabled=true; b.style.opacity='0.5'; let s=c.segs;
+  const C=2*Math.PI*88,ci=document.getElementById('circleStroke');
+  clearInterval(timerInt);
+  timerInt=setInterval(()=>{ s--; document.getElementById('acortTime').textContent=s; ci.style.strokeDashoffset=C*(s/c.segs);
+    if(s<=0){ clearInterval(timerInt); acortIdx++; if(acortIdx>=c.total) genKey(); else cfgAcort(); } },1000);
+}
+
+function cancelarAcort(){ clearInterval(timerInt); irA('sHome'); }
+
+// KEY
+function rc(n){ const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let r=''; for(let i=0;i<n;i++) r+=c[Math.floor(Math.random()*c.length)]; return r; }
+function genKeyStr(t){ return `Lic-free-${rc(5)}${CFG[t].id}${rc(6)}`; }
+
+function genKey(){
+  const key=genKeyStr(plan),now=new Date();
+  const e={ key,tipo:plan,usuario:curUser,fecha:now.toLocaleDateString('es-MX'),hora:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),ts:now.getTime() };
+  const k=S.getK(); k.unshift(e); if(k.length>1000) k.length=1000; S.setK(k);
+  document.getElementById('keyDisplay').textContent=key;
+  document.getElementById('btnWA').href=`https://wa.me/${WA}?text=${encodeURIComponent('.panel '+key)}`;
+  const b=document.getElementById('btnCopiar'); b.textContent='📋 Copiar Licencia'; b.classList.remove('copied');
+  actualizarBloqueos(); irA('sKey');
+}
+
+function copiarKey(){
+  const key=document.getElementById('keyDisplay').textContent,b=document.getElementById('btnCopiar');
+  const ok=()=>{ b.textContent='✓ ¡Copiada!'; b.classList.add('copied'); mostrarToast('📋 Licencia copiada'); setTimeout(()=>{ b.textContent='📋 Copiar Licencia'; b.classList.remove('copied'); },2500); };
+  navigator.clipboard?navigator.clipboard.writeText(key).then(ok).catch(()=>fbCopy(key,ok)):fbCopy(key,ok);
+}
+function fbCopy(t,cb){ const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='position:fixed;opacity:0;'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); cb(); }
+
+function comprarPermanente(){ window.open(`https://wa.me/${WA}?text=${encodeURIComponent(PERM_MSG)}`,'_blank'); }
+
+// DRAWER
+function abrirDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('drawerOverlay').classList.add('open'); }
+function cerrarDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('drawerOverlay').classList.remove('open'); }
+
+// MIS KEYS
+function abrirMisKeys(){
+  const mis=S.getK().filter(k=>k.usuario===curUser);
+  document.getElementById('misKeysSub').textContent=`${mis.length} licencia(s) generadas`;
+  document.getElementById('misKeysList').innerHTML=mis.length===0?'<div class="empty-msg">Aún no has generado ninguna licencia</div>'
+    :mis.map(k=>`<div class="user-key-entry"><div class="user-key-text">${k.key}</div><div class="user-key-meta"><span class="key-badge ${CFG[k.tipo]?.badge||''}">${k.tipo?.toUpperCase()||''}</span><span>${k.fecha} ${k.hora||''}</span></div></div>`).join('');
+  document.getElementById('mMisKeys').classList.add('open');
+}
+
+// ADMIN
+function abrirAdmin(){
+  if(curRol==='admin'||curRol==='vendedor'){ panelRol=curRol; abrirPanel(); return; }
+  document.getElementById('aUser').value=''; document.getElementById('aPass').value=''; document.getElementById('aMsg').textContent='';
+  document.getElementById('mAdminLogin').classList.add('open');
+}
+
+function loginAdmin(){
+  const u=norm(document.getElementById('aUser').value), p=document.getElementById('aPass').value.trim();
+  const msg=document.getElementById('aMsg'), us=S.getU();
+  if(us[u]&&us[u].pass===p&&(us[u].role==='admin'||us[u].role==='vendedor')&&!us[u].bloqueado){
+    closeM('mAdminLogin'); panelRol=us[u].role; abrirPanel();
+  } else msg.textContent='❌ Credenciales incorrectas o sin permisos';
+}
+
+function esActiva(e){ const c=CFG[e.tipo]; if(!c) return false; if(!c.bloqMs) return true; return (Date.now()-e.ts)<c.bloqMs; }
+
+function abrirPanel(){
+  const k=S.getK(),us=S.getU(),esA=panelRol==='admin';
+  document.getElementById('panelTitle').textContent=esA?'PANEL ADMIN':'PANEL VENDEDOR';
+  document.getElementById('panelSub').textContent=esA?'Control total':'Licencias del sistema';
+  document.getElementById('stTotal').textContent=k.length;
+  document.getElementById('stActivas').textContent=k.filter(esActiva).length;
+  document.getElementById('stUsers').textContent=Object.keys(us).length;
+  document.getElementById('st24h').textContent=k.filter(x=>x.tipo==='24h').length;
+  document.getElementById('st3d').textContent=k.filter(x=>x.tipo==='3d').length;
+  document.getElementById('st7d').textContent=k.filter(x=>x.tipo==='7d').length;
+  document.getElementById('tabUsrBtn').style.display=esA?'':'none';
+  document.getElementById('tabApiBtn').style.display=esA?'':'none';
+  document.getElementById('apiKeyText').textContent=API_KEY;
+  renderLic(k);
+  panelTab('lic',document.querySelector('#adminTabsRow .admin-tab'));
+  document.getElementById('mAdminPanel').classList.add('open');
+}
+
+function panelTab(t,el){
+  document.querySelectorAll('#adminTabsRow .admin-tab').forEach(x=>x.classList.remove('active')); if(el) el.classList.add('active');
+  document.getElementById('tLic').style.display=t==='lic'?'block':'none';
+  document.getElementById('tUsr').style.display=t==='usr'?'block':'none';
+  document.getElementById('tApi').style.display=t==='api'?'block':'none';
+  if(t==='usr') renderUsr();
+}
+
+function renderLic(k){
+  const l=document.getElementById('licList');
+  l.innerHTML=k.length===0?'<div class="empty-msg">Sin licencias aún</div>'
+    :k.map(x=>`<div class="key-entry"><div class="key-entry-top"><div class="key-entry-text">${x.key}</div><span class="key-badge ${CFG[x.tipo]?.badge||''}">${x.tipo?.toUpperCase()||''}</span></div><div class="key-entry-meta">👤 ${x.usuario||'—'} · ${x.fecha||''} ${x.hora||''} · ${esActiva(x)?'<span style="color:var(--success)">✓ Activa</span>':'<span style="color:var(--danger)">✗ Vencida</span>'}</div></div>`).join('');
+}
+
+function renderUsr(){
+  const us=S.getU(),ips=S.getIPs(),l=document.getElementById('usrList'),e=Object.entries(us);
+  l.innerHTML=e.length===0?'<div class="empty-msg">Sin usuarios</div>'
+    :e.map(([n,d])=>{
+      const rc2=d.role==='admin'?'role-admin':d.role==='vendedor'?'role-vendedor':'role-user';
+      const rl=d.role==='admin'?'Admin':d.role==='vendedor'?'Vendedor':'Usuario';
+      const ipB=d.ip&&ips.includes(d.ip);
+      return `<div class="user-entry"><div class="user-entry-top"><div><span class="user-entry-name">${n}</span>${d.bloqueado?'<span class="blocked-badge">BLOQUEADO</span>':''}</div><span class="user-entry-role ${rc2}">${rl}</span></div>
+      <div class="user-entry-meta">Pass: <b style="color:var(--bright)">${d.pass}</b> · ${d.creado||'—'}${d.ip?`<br>IP: ${d.ip} ${ipB?'🔴 Bloqueada':''}`:''}</div>
+      <div class="user-entry-actions">
+        <button class="btn-ue btn-ue-edit" onclick="abrirEdit('${n}')">✏ Editar</button>
+        ${d.bloqueado?`<button class="btn-ue btn-ue-unblock" onclick="togBlq('${n}',false)">✓ Desbloquear</button>`:`<button class="btn-ue btn-ue-block" onclick="togBlq('${n}',true)">🚫 Bloquear</button>`}
+        ${d.ip?(ipB?`<button class="btn-ue btn-ue-unblock" onclick="togIP('${d.ip}',false)">🌐 Desbloquear IP</button>`:`<button class="btn-ue btn-ue-block" onclick="togIP('${d.ip}',true)">🌐 Bloquear IP</button>`):''}
+        ${n!=='slim'?`<button class="btn-ue btn-ue-del" onclick="delUsr('${n}')">🗑 Eliminar</button>`:''}
+      </div></div>`;
+    }).join('');
+}
+
+function togBlq(n,v){ const u=S.getU(); u[n].bloqueado=v; S.setU(u); mostrarToast(v?`🚫 ${n} bloqueado`:`✓ ${n} desbloqueado`); renderUsr(); }
+function togIP(ip,v){ const ips=S.getIPs(); if(v&&!ips.includes(ip)) ips.push(ip); else { const i=ips.indexOf(ip); if(i>-1) ips.splice(i,1); } S.setIPs(ips); mostrarToast(v?'🌐 IP bloqueada':'🌐 IP desbloqueada'); renderUsr(); }
+function delUsr(n){ if(!confirm(`¿Eliminar a "${n}"?`)) return; const u=S.getU(); delete u[n]; S.setU(u); mostrarToast(`🗑 ${n} eliminado`); renderUsr(); }
+
+function abrirEdit(n){
+  const d=S.getU()[n];
+  document.getElementById('editOld').value=n; document.getElementById('editSub').textContent=`Editando: ${n}`;
+  document.getElementById('editName').value=n; document.getElementById('editPass').value=d.pass; document.getElementById('editRole').value=d.role||'user';
+  document.getElementById('editMsg').textContent=''; document.getElementById('mEditUser').classList.add('open');
+}
+
+function guardarEdit(){
+  const old=document.getElementById('editOld').value, nn=norm(document.getElementById('editName').value);
+  const np=document.getElementById('editPass').value.trim(), nr=document.getElementById('editRole').value;
+  const msg=document.getElementById('editMsg');
+  if(!nn){ msg.className='auth-msg error'; msg.textContent='Nombre vacío'; return; }
+  const u=S.getU(); if(nn!==old&&u[nn]){ msg.className='auth-msg error'; msg.textContent='Ya existe ese nombre'; return; }
+  const d=u[old]; if(np) d.pass=np; d.role=nr; if(nn!==old){ u[nn]=d; delete u[old]; } S.setU(u);
+  msg.className='auth-msg ok'; msg.textContent='¡Guardado!'; mostrarToast('✓ Usuario actualizado');
+  setTimeout(()=>{ closeM('mEditUser'); renderUsr(); },700);
+}
+
+function copiarApi(){ const ok=()=>mostrarToast('📋 API Key copiada'); navigator.clipboard?navigator.clipboard.writeText(API_KEY).then(ok):fbCopy(API_KEY,ok); }
+
+['mAdminLogin','mAdminPanel','mMisKeys','mEditUser'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) closeM(id); });
+});
+document.getElementById('aPass').addEventListener('keydown',e=>{ if(e.key==='Enter') loginAdmin(); });
+document.getElementById('lPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('rPass2').addEventListener('keydown',e=>{ if(e.key==='Enter') doRegister(); });
+
+let toastT;
+function mostrarToast(msg,err=false){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast'+(err?' err':''); t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2500); }
+
+(function(){
+  const ses=S.getSes(); if(!ses) return;
+  const u=S.getU(); if(u[ses]&&!u[ses].bloqueado){ setSession(ses); actualizarBloqueos(); iniciarBadgeInt(); irA('sHome'); } else S.clrSes();
+})();
+</script>
+</body>
+</html>
